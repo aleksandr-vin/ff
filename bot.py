@@ -4,14 +4,48 @@ import os
 from time import sleep
 from picamera import PiCamera
 from telegram.ext import Updater, CommandHandler
+from threading import Timer
+import string
+import random
 
 logging.config.fileConfig('logging.conf')
 logger = logging.getLogger('bot')
 
+jobs = {}
+
+def rand_name():
+    return ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(5))
+
+def delayed_job(job_name, update):
+    jobs[job_name] = Timer(5, delayed_job, [job_name, update])
+    jobs[job_name].start()
+    logger.debug("Restarted delayed job {}".format(job_name))
+    res = update.message.reply_text('Restarted job: {}'.format(job_name), disable_notification=True)
+    logger.debug("result {}".format(res))
+    
 def start(bot, update):
     logger.debug("got {}".format(update))
-    res = update.message.reply_text('Hello World!')
+    name = rand_name()
+    jobs[name] = Timer(5, delayed_job, [name, update])
+    jobs[name].start()
+    logger.debug("Started delayed job {}".format(name))
+    res = update.message.reply_text('Started job: {}'.format(name))
     logger.debug("result {}".format(res))
+
+def stop(bot, update, args):
+    logger.debug("got {}".format(update))
+    logger.debug("jobs: {}".format(jobs))
+    for arg in args:
+        logger.debug("job: %s", arg)
+        timer = jobs.get(arg)
+        if timer:
+            timer.cancel()
+            del jobs[arg]
+            res = update.message.reply_text('Job {} stopped'.format(arg))
+            logger.debug("result {}".format(res))
+        else:
+            res = update.message.reply_text('Job {} not found'.format(arg))
+            logger.debug("result {}".format(res))
 
 def hello(bot, update):
     logger.debug("got {}".format(update))
@@ -57,6 +91,7 @@ TELEGRAM_BOT_TOKEN = os.environ['TELEGRAM_BOT_TOKEN']
 updater = Updater(TELEGRAM_BOT_TOKEN)
 
 updater.dispatcher.add_handler(CommandHandler('start', start))
+updater.dispatcher.add_handler(CommandHandler('stop', stop, pass_args=True))
 updater.dispatcher.add_handler(CommandHandler('hello', hello))
 updater.dispatcher.add_handler(CommandHandler('pic', pic))
 updater.dispatcher.add_handler(CommandHandler('video', video))
