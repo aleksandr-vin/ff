@@ -20,8 +20,16 @@ def delayed_job(job_name, update):
     jobs[job_name] = Timer(5, delayed_job, [job_name, update])
     jobs[job_name].start()
     logger.debug("Restarted delayed job {}".format(job_name))
-    res = update.message.reply_text('Restarted job: {}'.format(job_name), disable_notification=True)
-    logger.debug("result {}".format(res))
+
+def list_jobs(bot, update):
+    logger.debug("got {}".format(update))
+    if len(jobs) > 0:
+        jobs_list = "\n- ".join([""] + list(jobs.keys()))
+        res = update.message.reply_text('Jobs running: {}'.format(jobs_list))
+        logger.debug("result {}".format(res))
+    else:
+        res = update.message.reply_text('No jobs are running')
+        logger.debug("result {}".format(res))
     
 def start(bot, update):
     logger.debug("got {}".format(update))
@@ -92,6 +100,7 @@ updater = Updater(TELEGRAM_BOT_TOKEN)
 
 updater.dispatcher.add_handler(CommandHandler('start', start))
 updater.dispatcher.add_handler(CommandHandler('stop', stop, pass_args=True))
+updater.dispatcher.add_handler(CommandHandler('jobs', list_jobs))
 updater.dispatcher.add_handler(CommandHandler('hello', hello))
 updater.dispatcher.add_handler(CommandHandler('pic', pic))
 updater.dispatcher.add_handler(CommandHandler('video', video))
