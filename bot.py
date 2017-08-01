@@ -4,6 +4,7 @@ import os
 from time import sleep
 from picamera import PiCamera
 from telegram.ext import Updater, CommandHandler
+from telegram import Bot
 from threading import Timer
 import string
 import random
@@ -96,7 +97,8 @@ def video(bot, update):
     logger.debug("result {}".format(res))
 
 TELEGRAM_BOT_TOKEN = os.environ['TELEGRAM_BOT_TOKEN']
-updater = Updater(TELEGRAM_BOT_TOKEN)
+bot = Bot(TELEGRAM_BOT_TOKEN)
+updater = Updater(bot = bot)
 
 updater.dispatcher.add_handler(CommandHandler('start', start))
 updater.dispatcher.add_handler(CommandHandler('stop', stop, pass_args=True))
@@ -104,6 +106,12 @@ updater.dispatcher.add_handler(CommandHandler('jobs', list_jobs))
 updater.dispatcher.add_handler(CommandHandler('hello', hello))
 updater.dispatcher.add_handler(CommandHandler('pic', pic))
 updater.dispatcher.add_handler(CommandHandler('video', video))
+
+TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID')
+if TELEGRAM_CHAT_ID:
+    logger.info("Introducing self on chat {}".format(TELEGRAM_CHAT_ID))
+    res = bot.send_message(TELEGRAM_CHAT_ID, "Hoi!")
+    logger.debug("result {}".format(res))
 
 logger.info("Ready to start polling")
 updater.start_polling()
